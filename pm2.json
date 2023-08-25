@@ -1,0 +1,67 @@
+{
+    "apps": [
+        {
+            "name": "api-public",
+            "script": "node",
+            "args": "./dist/api-public.js",
+            "watch": false,
+            "ignore_watch": [
+                "node_modules",
+                "log",
+                ".git/"
+            ],
+            "instances": "1",
+            "exec_mode": "fork",
+            "log_date_format": "DD/MM/YYYY HH:mm",
+            "error_file": "./log/api-public/err.log",
+            "out_file": "./log/api-public/out.log",
+            "autorestart": true,
+            "merge_logs": true,
+            "env": {
+                "production": true
+            }
+        },
+        {
+            "name": "api-private",
+            "script": "node",
+            "args": "./dist/api-private.js",
+            "watch": false,
+            "ignore_watch": [
+                "node_modules",
+                "log",
+                ".git/"
+            ],
+            "instances": "1",
+            "exec_mode": "fork",
+            "log_date_format": "DD/MM/YYYY HH:mm",
+            "error_file": "./log/api-private/err.log",
+            "out_file": "./log/api-private/out.log",
+            "autorestart": true,
+            "merge_logs": true,
+            "env": {
+                "production": true
+            }
+        },
+        {
+            "name": "cronjob-vcb",
+            "script": "node",
+            "args": "./dist/cronjob/vcb.cronjob.js",
+            "watch": false,
+            "ignore_watch": [
+                "node_modules",
+                "log",
+                ".git/"
+            ],
+            "instances": "1",
+            "exec_mode": "fork",
+            "log_date_format": "DD/MM/YYYY HH:mm",
+            "error_file": "./log/cronjob-vcb/err.log",
+            "out_file": "./log/cronjob-vcb/out.log",
+            "autorestart": true,
+            "merge_logs": true,
+            "env": {
+                "production": true
+            }
+        }
+    ]
+}
