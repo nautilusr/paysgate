@@ -1,12 +1,22 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
-    "useDefineForClassFields": true,
-    "esModuleInterop": true,
-    "module": "commonjs",
-    "outDir": "./dist",
-    "strict": true,
-    "noImplicitAny": true
+    "target": "es2021", // Phiên bản JavaScript mục tiêu
+    "module": "commonjs", // Loại module (commonjs, es2020, ...)
+    "strict": true, // Chế độ kiểm tra nghiêm ngặt
+    "esModuleInterop": true, // Hỗ trợ import/export theo cách sử dụng ES modules
+    "forceConsistentCasingInFileNames": true, // Kiểm tra chữ hoa/chữ thường chính xác trong tên tệp
+    "noImplicitAny": true, // Không cho phép kiểu "any" ngầm định
+    "noUnusedLocals": true, // Cảnh báo khi có biến không được sử dụng
+    "noUnusedParameters": true, // Cảnh báo khi có tham số không được sử dụng
+    "strictNullChecks": true, // Kiểm tra nghiêm ngặt null và undefined
+    "noImplicitReturns": true, // Cảnh báo khi một hàm có thể không có giá trị trả về
+    "noFallthroughCasesInSwitch": true, // Cảnh báo khi có trường hợp rơi qua trong switch
+    "resolveJsonModule": true, // Hỗ trợ import JSON như một module
+    "declaration": true, // Tạo tệp định nghĩa (.d.ts) cho mã nguồn TypeScript
+    "strictFunctionTypes": true, // Kiểm tra kiểu nghiêm ngặt cho các kiểu hàm
+    "strictPropertyInitialization": true, // Kiểm tra khởi tạo thuộc tính nghiêm ngặt
+    "alwaysStrict": true, // Luôn sử dụng 'strict mode'
+    "outDir": "./dist"
   },
   "include": [
     "src/**/*",

@@ -8,5 +8,6 @@ export const errorCodes = {
     7: "Insufficient Funds",
     8: "Transaction Timeout",
     9: "Other Errors",
-    401: 'Unauthorized'
+    401: 'Unauthorized',
+    500: 'Internal Server Error',
 };
