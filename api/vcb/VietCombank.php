@@ -68,10 +68,20 @@ class VietCombank
         $this->username = $username;
         $this->password = $password;
         $this->account_number = $account_number;
-        $this->parseData();
+        $url = "http://host.docker.internal:3000/api/account?username=".$this->username."&password=".$this->password."&account_number=".$this->account_number;
+        $client = new Client(['http_errors' => false]);
+        $res = $client->request('GET', $url, [
+            'headers' => array(
+                'user-agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
+            ),
+        ]);
+        $result = json_decode($res->getBody());
+        if ($result != null) {
+            $this->parseData($result);
+        } else {
+            $this->saveData();
+        }
     }
-
-
 
     public function saveData(){
         $data = [
@@ -109,16 +119,17 @@ class VietCombank
             'json' => $data
         ]);
     }
-    public function parseData(){
-        $url = "http://host.docker.internal:3000/api/account?username=".$this->username."&password=".$this->password."&account_number=".$this->account_number;
-        $client = new Client(['http_errors' => false]);
-        $res = $client->request('GET', $url, [
-            'headers' => array(
-                'user-agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
-            ),
-        ]);
-        $data = json_decode($res->getBody());
-        $this->sendTest($data);
+    public function log($data){
+        file_put_contents("data/log.txt", json_encode($data) . "\n", FILE_APPEND);
+    }
+    public function parseData($data){
+        // $url = "http://host.docker.internal:3000/api/account?username=".$this->username."&password=".$this->password."&account_number=".$this->account_number;
+        // $client = new Client(['http_errors' => false]);
+        // $res = $client->request('GET', $url, [
+        //     'headers' => array(
+        //         'user-agent' => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'
+        //     ),
+        // ]);
         // $data = json_decode($result);
         $this->username = $data->username;
         $this->password = $this->password;
@@ -424,7 +435,6 @@ class VietCombank
         );
         $result = $this->curlPost($this->url['getlistAccount'],$param);
         return $result;
-
     }
 
     public function getlistDDAccount(){
@@ -671,6 +681,11 @@ class VietCombank
                 'body' => json_encode($this->encryptData($data)),
             ]);
             $result = json_decode($res->getBody()->getContents());
+            $this->log($url);
+            $this->log($this->headerNull());
+            $this->log($data);
+            $this->log(json_encode($this->encryptData($data)));
+            $this->log($result);
             return $this->decryptData($result);
         } catch (\Exception $e) {
             return false;
@@ -679,7 +694,7 @@ class VietCombank
 
     private function encryptData($str){
         $str["clientPubKey"] = $this->clientPublicKey;
-
+        $this->log($str);
         $key = Str::random(32);
         $iv = Str::random(16);
         $rsa = new RSA();
