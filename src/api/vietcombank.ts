@@ -55,35 +55,31 @@ export class vietcombank {
         this.username = username;
         this.password = password;
         this.account_number = account_number;
-        this.init()
-    }
-    async init() {
         this.genKeys()
-        const data = await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number });
-
-        if (!data) {
-            console.log('data null', data)
-            this.clientId = '';
-            this.browserId = md5(this.username)
-            this.saveData();
-        } else {
-            console.log('data', data)
-            this.username = data.username;
-            this.password = data.password;
-            this.account_number = data.account_number;
-            this.sessionId = data.sessionId;
-            this.mobileId = data.mobileId;
-            this.clientId = data.clientId;
-            this.token = data.token;
-            this.accessToken = data.accessToken;
-            this.authToken = data.authToken;
-            this.cif = data.cif;
-            this.res = data.res;
-            this.tranId = data.tranId;
-            this.browserToken = data.browserToken;
-            this.browserId = data.browserId;
-            this.E = data.E;
-        }
+    }
+    async getAccount() {
+        return await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number });
+        // if (!data) {
+        //     this.clientId = '';
+        //     this.browserId = md5(this.username)
+        //     this.saveData();
+        // } else {
+        //     this.username = data.username;
+        //     this.password = data.password;
+        //     this.account_number = data.account_number;
+        //     this.sessionId = data.sessionId;
+        //     this.mobileId = data.mobileId;
+        //     this.clientId = data.clientId;
+        //     this.token = data.token;
+        //     this.accessToken = data.accessToken;
+        //     this.authToken = data.authToken;
+        //     this.cif = data.cif;
+        //     this.res = data.res;
+        //     this.tranId = data.tranId;
+        //     this.browserToken = data.browserToken;
+        //     this.browserId = data.browserId;
+        //     this.E = data.E;
+        // }
     }
 
     async doLogin(): Promise<any> {
@@ -107,7 +103,6 @@ export class vietcombank {
         };
         const resultString = await this.curlPost(this.url.login, param);
         const result = JSON.parse(resultString);
-        console.log(result)
         if (result.code == '00') {
             this.sessionId = result.sessionId;
             this.mobileId = result.userInfo.mobileId;
@@ -172,7 +167,6 @@ export class vietcombank {
         try {
             const resultString = await this.curlPost(this.url['authen-service'] + "3008", param);
             const result = JSON.parse(resultString);
-            console.log(result)
             if (result && result.transaction && result.transaction.tranId) {
                 return this.chooseOtpType(result.transaction.tranId, type);
             } else {
@@ -231,28 +225,32 @@ export class vietcombank {
         }
     }
     async submitOtpLogin(otp: string) {
+        const account = await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number })
+        if (!account) {
+            const resultLogin = await new vietcombank(this.username, this.password, this.account_number).doLogin();
+            if (resultLogin.code == '00') new vietcombank(this.username, this.password, this.account_number).submitOtpLogin(otp)
+            return;
+        }
         const param = {
             DT: this.DT,
             OV: this.OV,
             PM: this.PM,
             E: this.getE() || "",
-            browserId: this.browserId,
+            browserId: account.browserId,
             lang: this.lang,
             mid: 3011,
             cif: "",
             clientId: "",
             mobileId: "",
             sessionId: "",
-            browserToken: this.browserToken,
-            tranId: this.tranId,
+            browserToken: account.browserToken,
+            tranId: account.tranId,
             otp: otp,
             user: this.username
         };
-        console.log(param)
         try {
             const resultString = await this.curlPost(this.url['authen-service'] + "3011", param);
             const result = JSON.parse(resultString);
-            console.log(result)
             if (result.code == '00') {
                 this.sessionId = result.sessionId;
                 this.mobileId = result.userInfo.mobileId;
@@ -416,7 +414,6 @@ export class vietcombank {
             });
             if (response.status === 200) {
                 const result = response.data;
-                console.log(result)
                 return this.decryptResponse(result);
             } else {
                 return false;
@@ -526,13 +523,15 @@ export class vietcombank {
             console.timeEnd("Generate keys...");
         }
     }
-    async getHistories(fromDate: any, toDate: any , page = 0) {
+    async getHistories(fromDate: any, toDate: any, page = 0) {
+        const account = await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number })
+        if (!account) return this.doLogin()
         const param = {
             DT: this.DT,
             OV: this.OV,
             PM: this.PM,
             E: this.getE() || "",
-            browserId: this.browserId,
+            browserId: account.browserId,
             accountNo: this.account_number,
             accountType: "D",
             fromDate: fromDate,
@@ -543,24 +542,31 @@ export class vietcombank {
             stmtDate: "",
             stmtType: "",
             mid: 14,
-            cif: this.cif,
+            cif: account.cif,
             user: this.username,
-            mobileId: this.mobileId,
-            clientId: this.clientId,
-            sessionId: this.sessionId
+            mobileId: account.mobileId,
+            clientId: account.clientId,
+            sessionId: account.sessionId
         };
-
         try {
-            const result = await this.curlPost(this.url['getHistories'], param);
+            const resultString = await this.curlPost(this.url['getHistories'], param);
+            const result = JSON.parse(resultString);
             console.log(result)
-            return result;
+            if (result.code == '00') {
+                return result;
+            } else {
+                const resultLogin = await new vietcombank(this.username, this.password, this.account_number).doLogin();
+                if (resultLogin.code == '00') {
+                    this.getHistories(fromDate, toDate, page)
+                }
+            }
         } catch (error) {
             console.error('Error occurred while retrieving histories:', error);
             return {
                 success: false,
                 message: "Error occurred while retrieving histories",
                 param: param,
-                error:  error
+                error: error
             };
         }
     }

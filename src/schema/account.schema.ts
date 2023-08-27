@@ -21,6 +21,7 @@ const accountSchema = new Schema({
   token:            { type: String, required: false },
   accessToken:      { type: String, required: false },
   authToken:        { type: String, required: false },
+  
 });
 
 export default model("account", accountSchema, "account");

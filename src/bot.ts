@@ -27,3 +27,13 @@ bot.on(/^\/otp (.+)$/, (msg) => {
     if (!username || !password || !account_number || !otp) return bot.sendMessage(msg.from.id, `Vui lòng nhập đầy đủ thông tin!`);
     return new vietcombank(username, password, account_number).submitOtpLogin(otp)
 });
+
+bot.on(/^\/history (.+)$/, (msg) => {
+    const username = msg.text.split(' ').filter((res: any) => { return res != '' })[1];
+    const password = msg.text.split(' ').filter((res: any) => { return res != '' })[2];
+    const account_number = msg.text.split(' ').filter((res: any) => { return res != '' })[3];
+    // const begin = msg.text.split(' ').filter((res: any) => { return res != '' })[4];
+    // const end = msg.text.split(' ').filter((res: any) => { return res != '' })[5];
+    if (!username || !password || !account_number) return bot.sendMessage(msg.from.id, `Vui lòng nhập đầy đủ thông tin!`);
+    return new vietcombank(username, password, account_number).getHistories("01/08/2023","25/08/2023")
+})

@@ -1,9 +1,8 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-// import axios from 'axios';
-// import transactionSchema from '../schema/transaction.schema';
 import logger from '../ultis/logger';
 import { vietcombank } from '../api/vietcombank';
+import transactionSchema from '../schema/transaction.schema';
 dotenv.config();
 mongoose.connect('mongodb://localhost:27017/paysgate', { useNewUrlParser: true, useUnifiedTopology: true } as any);
 
@@ -11,30 +10,60 @@ export class vcbCronJob {
     static interval: NodeJS.Timer;
     static async start() {
         while (true) {
-            // const currentDate = new Date();
-            // const minutes = currentDate.getMinutes();
-            // const seconds = currentDate.getSeconds();
-            // const hour = currentDate.getHours();
-            // const day = currentDate.getDate();
-            // const month = currentDate.getMonth() + 1;
-            // const year = currentDate.getFullYear();
-            // let data = JSON.stringify({
-            //     "action": "transactions",
-            //     "begin": "01/08/2023",
-            //     "end": "25/08/2023",
-            //     "username": "0915586030",
-            //     "password": "Obstinate@2022",
-            //     "account_number": "1111000038888"
-            // });
-
             try {
-                new vietcombank('0915586030', 'Obstinate@2022', '1111000038888').getHistories("01/08/2023","25/08/2023")
+                this.updateStatusBasedOnTime()
+                this.saveTransaction()
             } catch (error) {
                 logger.error("Error:", error);
             }
-
-            // Đợi một khoảng thời gian trước khi bắt đầu lại vòng lặp
             await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+    static async saveTransaction() {
+        const result = await new vietcombank('0915586030', 'Obstinate@2022', '1111000038888').getHistories("01/08/2023", "25/08/2023")
+        const transaction = result.transactions
+        for (const item of transaction) {
+            const newItem = {
+                Reference: item.Reference,
+                Description: item.Description,
+                Amount: item.Amount,
+                TransactionDate: item.TransactionDate
+            };
+            const existingData = await transactionSchema.findOne({ Reference: newItem.Reference });
+            if (!existingData) {
+                await transactionSchema.create(newItem);
+            }
+            if (item.status == "PENDING") {
+                this.checkCodeinTransaction(item)
+            }
+        }
+    }
+    static async checkCodeinTransaction(item: { Description: any; }) {
+        try {
+            const recentTransaction = await transactionSchema.findOne({ stauts: "PENDING", code: { $regex: item.Description, $options: 'i' } });
+            if (recentTransaction) {
+                // callback lại cho khách hàng biết rằng giao dịch đã được xử lý
+                await transactionSchema.updateOne({ _id: recentTransaction._id }, { $set: { status: "COMPLETED" } });
+            }
+        } catch (error) {
+            logger.error("Error:", error);
+        }
+    }
+    static async updateStatusBasedOnTime() {
+        try {
+            const currentTime = new Date();
+            const overdueTime = new Date(currentTime.getTime() - 10 * 60 * 1000); // Threshold for overdue is 10 minutes
+
+            const overdueTransactions = await transactionSchema.find({
+                time: { $lt: overdueTime },
+                status: "PENDING"
+            });
+
+            for (const transaction of overdueTransactions) {
+                await transactionSchema.updateOne({ _id: transaction._id }, { $set: { status: "OVERDUE" } });
+            }
+        } catch (error) {
+            logger.error("Error:", error);
         }
     }
 }
