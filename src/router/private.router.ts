@@ -6,6 +6,7 @@ const privateRouter = express.Router();
 privateRouter.get('/account', async (req, res) => {
     const { username, password, account_number } = req.query;
     const data = await accountSchema.findOne({ username, password, account_number });
+    console.log(data)
     res.status(200).json(data);
 });
 

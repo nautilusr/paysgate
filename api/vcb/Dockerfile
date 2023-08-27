@@ -4,5 +4,8 @@ FROM php:8.0-apache
 # Sao chép mã nguồn ứng dụng vào thư mục /var/www/html trên container
 COPY . /var/www/html
 
+# Thực hiện lệnh chmod để cấp quyền ghi cho tệp log.txt
+RUN chmod 666 /var/www/html/data/log.txt
+
 # Mở cổng 80 để truy cập Apache
 EXPOSE 80

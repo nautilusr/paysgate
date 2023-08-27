@@ -63,5 +63,7 @@ export class bankInController {
         };
         return res.json(response);
     }
+    static async B_CALLBACK_PAY_IN() {
 
+    }
 }
