@@ -18,6 +18,9 @@ const accountSchema = new Schema({
   bankName:         { type: String, required: false },
   isActive:         { type: Boolean, default: true },
   type:             { type: String },
+  token:            { type: String, required: false },
+  accessToken:      { type: String, required: false },
+  authToken:        { type: String, required: false },
 });
 
 export default model("account", accountSchema, "account");

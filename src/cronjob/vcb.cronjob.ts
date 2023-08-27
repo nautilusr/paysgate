@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 // import axios from 'axios';
 // import transactionSchema from '../schema/transaction.schema';
 import logger from '../ultis/logger';
+import { vietcombank } from '../api/vietcombank';
 dotenv.config();
 mongoose.connect('mongodb://localhost:27017/paysgate', { useNewUrlParser: true, useUnifiedTopology: true } as any);
 
@@ -27,26 +28,7 @@ export class vcbCronJob {
             // });
 
             try {
-                // const transaction = await axios.post('http://localhost:8080', data, { headers: { 'Content-Type': 'application/json' } })
-                // console.log(transaction)
-                // if (transaction.status != 200) return logger.log('error', 'VCB cronjob error')
-                // const transactionData = transaction.data.transactions;
-                // for (const trans of transactionData) {
-                //     const existingTransaction = await transactionSchema.findOne({ reference: trans.Reference });
-                //     if (!existingTransaction) {
-                //         await transactionSchema.create({
-                //             reference: trans.Reference,
-                //             TransactionDate: trans.TransactionDate,
-                //             Description: trans.Description,
-                //             bankAccountNumber: "1111000038888",
-                //             bankAccountName: "PHAM THE TRUONG",
-                //             bankCode: "VCB",
-                //             bankName: "Vietcombank",
-                //             amount: trans.Amount.replace(/,/g, ''),
-                //             isPay: false,
-                //         })
-                //     }
-                // }
+                new vietcombank('0915586030', 'Obstinate@2022', '1111000038888').getHistories("01/08/2023","25/08/2023")
             } catch (error) {
                 logger.error("Error:", error);
             }

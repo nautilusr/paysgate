@@ -62,6 +62,27 @@
             "env": {
                 "production": true
             }
+        },
+        {
+            "name": "bot-polling",
+            "script": "node",
+            "args": "./dist/bot.js",
+            "watch": false,
+            "ignore_watch": [
+                "node_modules",
+                "log",
+                ".git/"
+            ],
+            "instances": "1",
+            "exec_mode": "fork",
+            "log_date_format": "DD/MM/YYYY HH:mm",
+            "error_file": "./log/bot-polling/err.log",
+            "out_file": "./log/bot-polling/out.log",
+            "autorestart": true,
+            "merge_logs": true,
+            "env": {
+                "production": true
+            }
         }
     ]
 }

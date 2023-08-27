@@ -37,31 +37,60 @@ export class vietcombank {
     browserId: any;
     account_number: string;
     keys: any;
-    isActive: boolean | undefined;
+    isActive: boolean = false;
     sessionId: any;
     mobileId: any;
-    clientId: any;
+    clientId: string = "";
     cif: any;
-    browserToken: any;
-    tranId: string | undefined;
+    browserToken: string = "";
+    tranId: string = "";
     res: Object | undefined;
     E: string | undefined;
     bankCode: string = "VCB";
     bankName: string = "Vietcombank";
-    constructor() {
-        this.username = "0915586030";
-        this.password = "Obstinate@2022";
-        this.account_number = "1111000038888";
-        this.genKeys()
+    token: any;
+    accessToken: any;
+    authToken: any;
+    constructor(username: string, password: string, account_number: string) {
+        this.username = username;
+        this.password = password;
+        this.account_number = account_number;
+        this.init()
     }
+    async init() {
+        this.genKeys()
+        const data = await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number });
 
+        if (!data) {
+            console.log('data null', data)
+            this.clientId = '';
+            this.browserId = md5(this.username)
+            this.saveData();
+        } else {
+            console.log('data', data)
+            this.username = data.username;
+            this.password = data.password;
+            this.account_number = data.account_number;
+            this.sessionId = data.sessionId;
+            this.mobileId = data.mobileId;
+            this.clientId = data.clientId;
+            this.token = data.token;
+            this.accessToken = data.accessToken;
+            this.authToken = data.authToken;
+            this.cif = data.cif;
+            this.res = data.res;
+            this.tranId = data.tranId;
+            this.browserToken = data.browserToken;
+            this.browserId = data.browserId;
+            this.E = data.E;
+        }
+    }
 
     async doLogin(): Promise<any> {
         const solveCaptcha = await this.solveCaptcha();
         if (!solveCaptcha?.status) {
             return solveCaptcha;
         }
-
         const param = {
             DT: this.DT,
             OV: this.OV,
@@ -78,7 +107,8 @@ export class vietcombank {
         };
         const resultString = await this.curlPost(this.url.login, param);
         const result = JSON.parse(resultString);
-        if (result.code === '00') {
+        console.log(result)
+        if (result.code == '00') {
             this.sessionId = result.sessionId;
             this.mobileId = result.userInfo.mobileId;
             this.clientId = result.userInfo.clientId;
@@ -89,7 +119,7 @@ export class vietcombank {
                 success: true,
                 message: "success",
                 session: session,
-                data: result || "",
+                data: result,
             };
         } else if (result.code === '20231' && result.mid === '6') { // Trình duyệt chưa xác thực
             this.browserToken = result.browserToken;
@@ -200,6 +230,108 @@ export class vietcombank {
             };
         }
     }
+    async submitOtpLogin(otp: string) {
+        const param = {
+            DT: this.DT,
+            OV: this.OV,
+            PM: this.PM,
+            E: this.getE() || "",
+            browserId: this.browserId,
+            lang: this.lang,
+            mid: 3011,
+            cif: "",
+            clientId: "",
+            mobileId: "",
+            sessionId: "",
+            browserToken: this.browserToken,
+            tranId: this.tranId,
+            otp: otp,
+            user: this.username
+        };
+        console.log(param)
+        try {
+            const resultString = await this.curlPost(this.url['authen-service'] + "3011", param);
+            const result = JSON.parse(resultString);
+            console.log(result)
+            if (result.code == '00') {
+                this.sessionId = result.sessionId;
+                this.mobileId = result.userInfo.mobileId;
+                this.clientId = result.userInfo.clientId;
+                this.cif = result.userInfo.cif;
+                const session = {
+                    sessionId: this.sessionId,
+                    mobileId: this.mobileId,
+                    clientId: this.clientId,
+                    cif: this.cif
+                };
+                this.res = result;
+                this.saveData();
+                const sv = await this.saveBrowser();
+                if (sv.code === 0) {
+                    return {
+                        success: true,
+                        message: "success",
+                        d: sv,
+                        session: session,
+                        data: result || ""
+                    };
+                } else {
+                    return {
+                        success: false,
+                        message: sv.des,
+                        param: param,
+                        data: sv || ""
+                    };
+                }
+            } else {
+                return {
+                    success: false,
+                    message: result.des,
+                    param: param,
+                    data: result || ""
+                };
+            }
+        } catch (error) {
+            console.error(error);
+            return {
+                success: false,
+                message: "Error occurred during OTP submission",
+                param: param,
+                error: error
+            };
+        }
+    }
+    async saveBrowser() {
+        const param = {
+            DT: this.DT,
+            OV: this.OV,
+            PM: this.PM,
+            E: "",
+            browserId: this.browserId,
+            browserName: "Chrome 111.0.0.0",
+            lang: this.lang,
+            mid: 3009,
+            cif: this.cif,
+            clientId: this.clientId,
+            mobileId: this.mobileId,
+            sessionId: this.sessionId,
+            user: this.username
+        };
+
+        try {
+            const resultString = await this.curlPost(this.url['authen-service'] + "3009", param);
+            const result = JSON.parse(resultString);
+            return result;
+        } catch (error) {
+            console.error('Error occurred while saving browser:', error);
+            return {
+                success: false,
+                message: "Error occurred while saving browser",
+                param: param,
+                error: error
+            };
+        }
+    }
     async solveCaptcha(): Promise<any> {
         const getCaptcha = await this.getCaptcha();
         const result = await this.createTask(getCaptcha);
@@ -284,6 +416,7 @@ export class vietcombank {
             });
             if (response.status === 200) {
                 const result = response.data;
+                console.log(result)
                 return this.decryptResponse(result);
             } else {
                 return false;
@@ -382,7 +515,6 @@ export class vietcombank {
     genKeys() {
         if (!this.keys) {
             console.time("Generate keys...");
-
             this.keys = forge.pki.rsa.generateKeyPair({
                 bits: 1024,
                 workers: 1
@@ -391,11 +523,45 @@ export class vietcombank {
             this.clientPublicKey = forge.pki.publicKeyToPem(this.keys.publicKey).replace(/(-|(BEGIN|END) PUBLIC KEY|\r|\n)/gi, "");
             this.clientPrivateKey = forge.pki.privateKeyToPem(this.keys.privateKey);
             this.isActive = true;
-
             console.timeEnd("Generate keys...");
         }
     }
+    async getHistories(fromDate: any, toDate: any , page = 0) {
+        const param = {
+            DT: this.DT,
+            OV: this.OV,
+            PM: this.PM,
+            E: this.getE() || "",
+            browserId: this.browserId,
+            accountNo: this.account_number,
+            accountType: "D",
+            fromDate: fromDate,
+            toDate: toDate,
+            lang: this.lang,
+            pageIndex: page,
+            lengthInPage: 20,
+            stmtDate: "",
+            stmtType: "",
+            mid: 14,
+            cif: this.cif,
+            user: this.username,
+            mobileId: this.mobileId,
+            clientId: this.clientId,
+            sessionId: this.sessionId
+        };
 
+        try {
+            const result = await this.curlPost(this.url['getHistories'], param);
+            console.log(result)
+            return result;
+        } catch (error) {
+            console.error('Error occurred while retrieving histories:', error);
+            return {
+                success: false,
+                message: "Error occurred while retrieving histories",
+                param: param,
+                error:  error
+            };
+        }
+    }
 }
-
-new vietcombank().doLogin();
