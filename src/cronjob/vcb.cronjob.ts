@@ -4,6 +4,7 @@ import logger from '../ultis/logger';
 import { vietcombank } from '../api/vietcombank';
 import transactionSchema from '../schema/transaction.schema';
 dotenv.config();
+const { VCB_USERNAME, VCB_PASSWORD, VCB_ACCOUNT_NUMBER } = process.env;
 mongoose.connect('mongodb://localhost:27017/paysgate', { useNewUrlParser: true, useUnifiedTopology: true } as any);
 
 export class vcbCronJob {
@@ -20,7 +21,8 @@ export class vcbCronJob {
         }
     }
     static async saveTransaction() {
-        const result = await new vietcombank('0915586030', 'Obstinate@2022', '1111000038888').getHistories("01/08/2023", "25/08/2023")
+        if (!VCB_USERNAME || !VCB_PASSWORD || !VCB_ACCOUNT_NUMBER) return;
+        const result = await new vietcombank(VCB_USERNAME, VCB_PASSWORD, VCB_ACCOUNT_NUMBER).getHistories("01/08/2023", "25/08/2023")
         const transaction = result.transactions
         for (const item of transaction) {
             const newItem = {
@@ -67,4 +69,4 @@ export class vcbCronJob {
         }
     }
 }
-vcbCronJob.start();
+// vcbCronJob.start();

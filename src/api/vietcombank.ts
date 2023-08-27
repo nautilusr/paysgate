@@ -2,13 +2,13 @@ import axios, { AxiosResponse } from "axios";
 import md5 from "md5";
 import forge from 'node-forge';
 import accountSchema from "../schema/account.schema";
-
+import dotenv from 'dotenv';
+dotenv.config();
+const { clientPublicKey, clientPrivateKey } = process.env;
 
 export class vietcombank {
     private captcha1st: string = '5456dd091eb54cedbcfe5fa667d79b1b';
     private defaultPublicKey: string = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFpa3FRckl6WkprVXZIaXNqZnU1WkNOK1RMeS8vNDNDSWM1aEpFNzA5VElLM0hiY0M5dnVjMitQUEV0STZwZVNVR3FPbkZvWU93bDNpOHJSZFNhSzE3RzJSWk4wMU1JcVJJSi82YWM5SDRMMTFkdGZRdFI3S0hxRjdLRDBmajZ2VTRrYjUrMGN3UjNSdW1CdkRlTWxCT2FZRXBLd3VFWTlFR3F5OWJjYjVFaE5HYnh4TmZiVWFvZ3V0VndHNUMxZUtZSXR6YVlkNnRhbzNncTdzd05IN3A2VWRsdHJDcHhTd0ZFdmM3ZG91RTJzS3JQRHA4MDdaRzJkRnNsS3h4bVI0V0hESFdmSDBPcHpyQjVLS1dRTnl6WHhUQlhlbHFyV1pFQ0xSeXBOcTdQKzFDeWZnVFNkUTM1ZmRPN00xTW5pU0JUMVYzM0xkaFhvNzMvOXFENWU1VlFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t";
-    private clientPublicKey: string = "";
-    private clientPrivateKey: string = "";
     private url = {
         'getCaptcha': "https://digiapp.vietcombank.com.vn/utility-service/v1/captcha/",
         'login': "https://digiapp.vietcombank.com.vn/authen-service/v1/login",
@@ -55,31 +55,6 @@ export class vietcombank {
         this.username = username;
         this.password = password;
         this.account_number = account_number;
-        this.genKeys()
-    }
-    async getAccount() {
-        return await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number });
-        // if (!data) {
-        //     this.clientId = '';
-        //     this.browserId = md5(this.username)
-        //     this.saveData();
-        // } else {
-        //     this.username = data.username;
-        //     this.password = data.password;
-        //     this.account_number = data.account_number;
-        //     this.sessionId = data.sessionId;
-        //     this.mobileId = data.mobileId;
-        //     this.clientId = data.clientId;
-        //     this.token = data.token;
-        //     this.accessToken = data.accessToken;
-        //     this.authToken = data.authToken;
-        //     this.cif = data.cif;
-        //     this.res = data.res;
-        //     this.tranId = data.tranId;
-        //     this.browserToken = data.browserToken;
-        //     this.browserId = data.browserId;
-        //     this.E = data.E;
-        // }
     }
 
     async doLogin(): Promise<any> {
@@ -424,7 +399,8 @@ export class vietcombank {
     }
     private decryptResponse(e: { k: any; d: any; }) {
         const { k: n, d: t } = e;
-        const i = forge.pki.privateKeyFromPem(this.clientPrivateKey);
+        if (!clientPrivateKey) return;
+        const i = forge.pki.privateKeyFromPem(clientPrivateKey);
         const r = forge.util.decodeUtf8(i.decrypt(forge.util.decode64(n)));
         const s = Buffer.from(t, "base64");
         const o = s.slice(0, 16);
@@ -483,9 +459,8 @@ export class vietcombank {
         try {
             const n = forge.random.getBytesSync(32),
                 t = forge.random.getBytesSync(16);
-
             e = Object.assign({
-                clientPubKey: this.clientPublicKey
+                clientPubKey: clientPublicKey
             }, e);
 
             const i = forge.cipher.createCipher("AES-CTR", n);
@@ -507,20 +482,6 @@ export class vietcombank {
         } catch (error) {
             console.log(error);
             return null;
-        }
-    }
-    genKeys() {
-        if (!this.keys) {
-            console.time("Generate keys...");
-            this.keys = forge.pki.rsa.generateKeyPair({
-                bits: 1024,
-                workers: 1
-            });
-
-            this.clientPublicKey = forge.pki.publicKeyToPem(this.keys.publicKey).replace(/(-|(BEGIN|END) PUBLIC KEY|\r|\n)/gi, "");
-            this.clientPrivateKey = forge.pki.privateKeyToPem(this.keys.privateKey);
-            this.isActive = true;
-            console.timeEnd("Generate keys...");
         }
     }
     async getHistories(fromDate: any, toDate: any, page = 0) {
@@ -551,14 +512,13 @@ export class vietcombank {
         try {
             const resultString = await this.curlPost(this.url['getHistories'], param);
             const result = JSON.parse(resultString);
-            console.log(result)
             if (result.code == '00') {
                 return result;
             } else {
-                const resultLogin = await new vietcombank(this.username, this.password, this.account_number).doLogin();
-                if (resultLogin.code == '00') {
-                    this.getHistories(fromDate, toDate, page)
-                }
+                // const resultLogin = await new vietcombank(this.username, this.password, this.account_number).doLogin();
+                // if (resultLogin.code == '00') {
+                //     this.getHistories(fromDate, toDate, page)
+                // }
             }
         } catch (error) {
             console.error('Error occurred while retrieving histories:', error);
