@@ -16,7 +16,7 @@ const accountSchema = new Schema({
   bid:              { type: String, required: false },
   bankCode:         { type: String, required: false },
   bankName:         { type: String, required: false },
-  isActive:         { type: Boolean, default: true },
+  isActive:         { type: Boolean},
   type:             { type: String },
   token:            { type: String, required: false },
   accessToken:      { type: String, required: false },

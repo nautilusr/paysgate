@@ -19,6 +19,7 @@ const TransactionSchema = new Schema({
     status:                 { type: String, default: false },
     reference:              { type: String, required: false },
     Description:            { type: String, required: false },
+    TransactionId:          { type: String, required: false },
 });
 
 export default model("transaction", TransactionSchema, "transaction");
