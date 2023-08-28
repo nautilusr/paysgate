@@ -11,4 +11,4 @@ const app = express();
 app.use(bodyParser.json());
 app.use(logger('dev'));
 app.use('/api', publicRouter)
-app.listen(8888, async () => { console.log(`Server public started on port 8888`); })
+app.listen(2505, async () => { console.log(`Server public started on port 2505`); })

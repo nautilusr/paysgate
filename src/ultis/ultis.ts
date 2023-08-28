@@ -14,6 +14,15 @@ export class Ultis {
         const randomString = hash.slice(0, 6); // Lấy 6 ký tự đầu của giá trị băm
         return randomString;
     }
+    public static generateRandomString(length: number): string {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let randomString = '';
+        for (let i = 0; i < length; i++) {
+            const randomIndex = Math.floor(Math.random() * characters.length);
+            randomString += characters.charAt(randomIndex);
+        }
+        return randomString;
+    }
     public static async genKeys() {
         console.time("Generate keys...");
         const keys = forge.pki.rsa.generateKeyPair({
@@ -40,5 +49,5 @@ export class Ultis {
             });
         });
         console.timeEnd("Generate keys...");
-}
+    }
 }

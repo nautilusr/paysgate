@@ -3,12 +3,12 @@ import md5 from "md5";
 import forge from 'node-forge';
 import accountSchema from "../schema/account.schema";
 import dotenv from 'dotenv';
+import logger from "../ultis/logger";
+import { Ultis } from "../ultis/ultis";
 dotenv.config();
-const { clientPublicKey, clientPrivateKey } = process.env;
+const { clientPublicKey, clientPrivateKey, defaultPublicKey, captcha1st } = process.env;
 
 export class vietcombank {
-    private captcha1st: string = '5456dd091eb54cedbcfe5fa667d79b1b';
-    private defaultPublicKey: string = "LS0tLS1CRUdJTiBQVUJMSUMgS0VZLS0tLS0KTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFpa3FRckl6WkprVXZIaXNqZnU1WkNOK1RMeS8vNDNDSWM1aEpFNzA5VElLM0hiY0M5dnVjMitQUEV0STZwZVNVR3FPbkZvWU93bDNpOHJSZFNhSzE3RzJSWk4wMU1JcVJJSi82YWM5SDRMMTFkdGZRdFI3S0hxRjdLRDBmajZ2VTRrYjUrMGN3UjNSdW1CdkRlTWxCT2FZRXBLd3VFWTlFR3F5OWJjYjVFaE5HYnh4TmZiVWFvZ3V0VndHNUMxZUtZSXR6YVlkNnRhbzNncTdzd05IN3A2VWRsdHJDcHhTd0ZFdmM3ZG91RTJzS3JQRHA4MDdaRzJkRnNsS3h4bVI0V0hESFdmSDBPcHpyQjVLS1dRTnl6WHhUQlhlbHFyV1pFQ0xSeXBOcTdQKzFDeWZnVFNkUTM1ZmRPN00xTW5pU0JUMVYzM0xkaFhvNzMvOXFENWU1VlFJREFRQUIKLS0tLS1FTkQgUFVCTElDIEtFWS0tLS0t";
     private url = {
         'getCaptcha': "https://digiapp.vietcombank.com.vn/utility-service/v1/captcha/",
         'login': "https://digiapp.vietcombank.com.vn/authen-service/v1/login",
@@ -25,32 +25,27 @@ export class vietcombank {
         'getlistAccount': "https://digiapp.vietcombank.com.vn/bank-service/v1/get-list-account-via-cif",
         'getlistDDAccount': "https://digiapp.vietcombank.com.vn/bank-service/v1/get-list-ddaccount"
     };
-    private lang = 'vi';
-    private DT = "Windows";
-    private OV = "10";
-    private PM = "Chrome 111.0.0.0";
-    private checkAcctPkg = "1";
-    private username = "";
-    private password = "";
-    private captchaToken = "";
-    private captchaValue = "";
-    browserId: any;
-    account_number: string;
-    keys: any;
-    isActive: boolean = false;
-    sessionId: any;
-    mobileId: any;
-    clientId: string = "";
-    cif: any;
-    browserToken: string = "";
-    tranId: string = "";
-    res: Object | undefined;
-    E: string | undefined;
-    bankCode: string = "VCB";
-    bankName: string = "Vietcombank";
-    token: any;
-    accessToken: any;
-    authToken: any;
+    private lang: string = 'vi';
+    private DT: string = "Windows";
+    private OV: string = "10";
+    private PM: string = "Chrome 111.0.0.0";
+    private checkAcctPkg: string = "1";
+    private username: string = "";
+    private password: string = "";
+    private captchaToken: string = "";
+    private captchaValue: string = "";
+    private browserId: string = "";
+    private account_number: string = "";
+    private sessionId: string = "";
+    private mobileId: string = "";
+    private clientId: string = "";
+    private cif: string = "";
+    private browserToken: string = "";
+    private tranId: string = "";
+    private res = {};
+    private E: string = "";
+    private bankCode: string = "VCB";
+    private bankName: string = "Vietcombank";
     constructor(username: string, password: string, account_number: string) {
         this.username = username;
         this.password = password;
@@ -326,7 +321,7 @@ export class vietcombank {
         }
 
         try {
-            const response = await axios.get(`https://api.1stcaptcha.com/getresult?apikey=${this.captcha1st}&taskid=${taskId}`);
+            const response = await axios.get(`https://api.1stcaptcha.com/getresult?apikey=${captcha1st}&taskid=${taskId}`);
             const result = response.data;
             ``
             if (result.Status === 'SUCCESS') {
@@ -344,7 +339,7 @@ export class vietcombank {
     private async createTask(image: string): Promise<any> {
         try {
             const response = await axios.post('https://api.1stcaptcha.com/recognition', {
-                Apikey: this.captcha1st,
+                Apikey: captcha1st,
                 Type: 'imagetotext',
                 Image: image,
             });
@@ -356,7 +351,7 @@ export class vietcombank {
     }
 
     async getCaptcha(): Promise<string> {
-        this.captchaToken = this.generateRandomString(30);
+        this.captchaToken = Ultis.generateRandomString(30);
         const url = `https://digiapp.vietcombank.com.vn/utility-service/v1/captcha/${this.captchaToken}`;
         try {
             const response = await axios.get(url, {
@@ -370,15 +365,6 @@ export class vietcombank {
         } catch (error) {
             return '';
         }
-    }
-    private generateRandomString(length: number): string {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let randomString = '';
-        for (let i = 0; i < length; i++) {
-            const randomIndex = Math.floor(Math.random() * characters.length);
-            randomString += characters.charAt(randomIndex);
-        }
-        return randomString;
     }
     private async curlPost(url: string, data: any): Promise<any> {
         try {
@@ -397,24 +383,27 @@ export class vietcombank {
             return false;
         }
     }
-    private decryptResponse(e: { k: any; d: any; }) {
-        const { k: n, d: t } = e;
-        if (!clientPrivateKey) return;
-        const i = forge.pki.privateKeyFromPem(clientPrivateKey);
-        const r = forge.util.decodeUtf8(i.decrypt(forge.util.decode64(n)));
-        const s = Buffer.from(t, "base64");
-        const o = s.slice(0, 16);
-        const u = s.slice(16);
-        const c = forge.cipher.createDecipher("AES-CTR", Buffer.from(r, "base64").toString("binary"));
+    private decryptResponse(responseData: { k: any; d: any; }) {
+        const { k: encryptedAesKey, d: encryptedContent } = responseData;
+        if (!clientPrivateKey) return logger.error("Client private key is not defined");
 
-        c.start({
-            iv: o.toString("binary")
+        const privateKey = forge.pki.privateKeyFromPem(clientPrivateKey);
+        const decryptedAesKey = forge.util.decodeUtf8(privateKey.decrypt(forge.util.decode64(encryptedAesKey)));
+
+        const encryptedContentBuffer = Buffer.from(encryptedContent, "base64");
+        const iv = encryptedContentBuffer.slice(0, 16);
+        const encryptedPayload = encryptedContentBuffer.slice(16);
+
+        const aesCipher = forge.cipher.createDecipher("AES-CTR", Buffer.from(decryptedAesKey, "base64").toString("binary"));
+        aesCipher.start({
+            iv: iv.toString("binary")
         });
-        c.update(forge.util.createBuffer(u));
-        c.finish();
+        aesCipher.update(forge.util.createBuffer(encryptedPayload));
+        aesCipher.finish();
 
-        return c.output.data.toString();
+        return aesCipher.output.data.toString();
     }
+
     private headerNull() {
         const key = this.username + "6q93-@u9";
         const xlim = this.hashSHA256(key);
@@ -455,38 +444,40 @@ export class vietcombank {
         return formattedChunks.join('-').toUpperCase();
     }
 
-    private encryptRequest(e: any) {
+    private encryptRequest(requestData: any) {
         try {
-            const n = forge.random.getBytesSync(32),
-                t = forge.random.getBytesSync(16);
-            e = Object.assign({
+            const aesKey = forge.random.getBytesSync(32);
+            const iv = forge.random.getBytesSync(16);
+
+            requestData = Object.assign({
                 clientPubKey: clientPublicKey
-            }, e);
+            }, requestData);
 
-            const i = forge.cipher.createCipher("AES-CTR", n);
-            i.start({
-                iv: t
+            const aesCipher = forge.cipher.createCipher("AES-CTR", aesKey);
+            aesCipher.start({
+                iv: iv
             });
-            i.update(forge.util.createBuffer(forge.util.encodeUtf8(JSON.stringify(e))));
-            i.finish();
+            aesCipher.update(forge.util.createBuffer(forge.util.encodeUtf8(JSON.stringify(requestData))));
+            aesCipher.finish();
 
-            const r = Buffer.concat([Buffer.from(t, "binary"), Buffer.from(i.output.data, "binary")]);
-
-            const publicKey = forge.pki.publicKeyFromPem(forge.util.decode64(this.defaultPublicKey));
-            const s = publicKey.encrypt(forge.util.encode64(n));
+            const encryptedData = Buffer.concat([Buffer.from(iv, "binary"), Buffer.from(aesCipher.output.data, "binary")]);
+            if (!defaultPublicKey) return logger.error("Default public key is not defined");
+            const publicKey = forge.pki.publicKeyFromPem(forge.util.decode64(defaultPublicKey));
+            const encryptedAesKey = publicKey.encrypt(forge.util.encode64(aesKey));
 
             return {
-                d: r.toString("base64"),
-                k: forge.util.encode64(s)
+                d: encryptedData.toString("base64"),
+                k: forge.util.encode64(encryptedAesKey)
             };
         } catch (error) {
             console.log(error);
             return null;
         }
     }
+
     async getHistories(fromDate: any, toDate: any, page = 0) {
         const account = await accountSchema.findOne({ username: this.username, password: this.password, account_number: this.account_number })
-        if (!account) return this.doLogin()
+        if (!account) return logger.error("Account not found");
         const param = {
             DT: this.DT,
             OV: this.OV,
@@ -515,10 +506,7 @@ export class vietcombank {
             if (result.code == '00') {
                 return result;
             } else {
-                // const resultLogin = await new vietcombank(this.username, this.password, this.account_number).doLogin();
-                // if (resultLogin.code == '00') {
-                //     this.getHistories(fromDate, toDate, page)
-                // }
+                return logger.error(result.des);
             }
         } catch (error) {
             console.error('Error occurred while retrieving histories:', error);
