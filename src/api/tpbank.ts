@@ -31,7 +31,6 @@ export class tpbank {
                     'APP_VERSION': '2023.04.17',
                     'Accept': 'application/json, text/plain, */*',
                     'Accept-Language': 'vi-VN,vi;q=0.9,fr-FR;q=0.8,fr;q=0.7,en-US;q=0.6,en;q=0.5',
-                    'Authorization': 'Bearer',
                     'Connection': 'keep-alive',
                     'Content-Type': 'application/json',
                     'DEVICE_ID': this.deviceId,
@@ -117,21 +116,4 @@ export class tpbank {
         const response = await axios.request(config)
         return response.data
     }
-    // private async send2FASms(transactionId: string) {
-    //     try {
-    //         // Yêu cầu gửi mã xác minh 2FA qua SMS
-    //         const result = await axios.post(
-    //             "https://ebank.tpb.vn/gateway/api/auth/login2FA/sms",
-    //             {
-    //                 transaction_id: transactionId
-    //             },
-    //             { headers: this.headers }
-    //         );
-
-    //         const smsResult = result.data;
-    //         console.log(smsResult);
-    //     } catch (error) {
-    //         console.error("Đã xảy ra lỗi:", error);
-    //     }
-    // }
 }
